@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lanza y Atrapa | Desafío Óculo-Manual y Concentración</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="theme-chicken">
+  <div id="game-app">
+    <!-- BARRA SUPERIOR DE ESTADO / HUD -->
+    <header id="game-hud" class="hud-container hidden">
+      <div class="hud-left">
+        <button id="btn-menu-back" class="btn-icon" title="Volver al Menú">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <button id="btn-toggle-sound" class="btn-icon" title="Sonido On/Off">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-hud-settings" class="btn-icon" title="Ajustes y Sensibilidad">
+          <span>⚙️</span>
+        </button>
+        <div class="player-turn-badge" id="player-turn-badge">
+          <span class="avatar-dot" id="current-player-color"></span>
+          <span id="current-player-name">Jugador 1</span>
+        </div>
+      </div>
+
+      <div class="hud-center">
+        <!-- Temporizador -->
+        <div class="timer-card" id="timer-box">
+          <span class="timer-icon">⏳</span>
+          <span id="timer-display" class="timer-digits">00:45</span>
+        </div>
+        <!-- Contador de Pelotas / Munición -->
+        <div class="ammo-card" id="ammo-card" title="Pelotas disponibles en reserva">
+          <span class="ammo-icon">🔵</span>
+          <span id="ammo-display" class="ammo-digits">x10</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <!-- Marcador de Puntos -->
+        <div class="score-card">
+          <span class="score-label">PUNTOS</span>
+          <span id="score-display" class="score-digits">0</span>
+        </div>
+        <!-- Racha y Precisión en Vivo -->
+        <div class="streak-card">
+          <span class="streak-fire">🔥</span>
+          <span id="streak-display">x0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DE JUEGO / CANVAS -->
+    <main id="canvas-container">
+      <canvas id="game-canvas"></canvas>
+      
+      <!-- Indicador de Potencia y Dirección Flotante -->
+      <div id="launch-hints" class="launch-hints">
+        <div class="hint-text" id="hint-text-content">🎯 Toca la pantalla / arrastra hacia atrás o presiona "¡LANZAR!"</div>
+      </div>
+
+      <!-- Barra de Ayuda Rápida, Recarga de Bolas y Poderes de Energía -->
+      <div id="quick-controls" class="quick-controls hidden">
+        <!-- Botón Recargar Bolas -->
+        <button id="btn-reload-balls" class="btn-action-pill btn-reload" title="Recargar lote de pelotas">
+          <span class="pill-icon">🔄</span>
+          <span class="pill-label">Recargar Bolas</span>
+        </button>
+
+        <!-- Botón Principal Lanzar -->
+        <button id="btn-quick-launch" class="btn-launch-easy" title="Lanzar pelota (Espacio)">
+          <span class="btn-launch-icon">🚀</span>
+          <span class="btn-launch-label">¡LANZAR!</span>
+        </button>
+
+        <!-- Poder 1: Imán Magnético -->
+        <button id="btn-power-magnet" class="btn-action-pill btn-power" title="Activa atracción magnética hacia los orificios">
+          <span class="pill-icon">🧲</span>
+          <span class="pill-label">Imán</span>
+          <span class="power-badge" id="badge-magnet">1</span>
+        </button>
+
+        <!-- Poder 2: Fuego Multiplicador x2 -->
+        <button id="btn-power-fire" class="btn-action-pill btn-power" title="Pelota de fuego: Puntos dobles x2">
+          <span class="pill-icon">⚡</span>
+          <span class="pill-label">Puntos x2</span>
+          <span class="power-badge" id="badge-fire">1</span>
+        </button>
+      </div>
+
+      <!-- Banner de Feedback Flotante (Acierto, Combo, Fallo) -->
+      <div id="floating-feedback" class="floating-feedback"></div>
+    </main>
+
+    <!-- MENÚ PRINCIPAL -->
+    <div id="screen-main-menu" class="screen-overlay">
+      <div class="menu-card glass-panel">
+        <div class="logo-box">
+          <span class="logo-badge">DESAFÍO PSICOMOTRIZ</span>
+          <h1 class="game-title">LANZA Y ATRAPA</h1>
+          <p class="game-subtitle">Evaluación de Atención Óculo-Manual, Coordinación y Concentración</p>
+        </div>
+
+        <div class="inspiration-banner">
+          <span class="badge-tag">⭐ Edición Especial</span>
+          <span>Inspirado en el prototipo físico de catapulta artesanal con canasta de huevos</span>
+        </div>
+
+        <div class="menu-actions">
+          <button id="btn-mode-single" class="btn btn-primary pulse-btn">
+            <span class="btn-icon-large">🎯</span>
+            <div class="btn-text-group">
+              <span class="btn-title">1 Jugador</span>
+              <span class="btn-desc">Entrenamiento y Evaluación Neurocognitiva</span>
+            </div>
+          </button>
+
+          <button id="btn-mode-multi" class="btn btn-secondary">
+            <span class="btn-icon-large">👥</span>
+            <div class="btn-text-group">
+              <span class="btn-title">Multijugador (Turnos)</span>
+              <span class="btn-desc">Competencia de 2 a 4 jugadores con podio</span>
+            </div>
+          </button>
+
+          <button id="btn-open-settings" class="btn btn-neutral">
+            <span class="btn-icon-large">⚙️</span>
+            <div class="btn-text-group">
+              <span class="btn-title">Sensibilidad y Opciones</span>
+              <span class="btn-desc">Fondos, sensibilidad de control y calibración</span>
+            </div>
+          </button>
+
+          <button id="btn-open-instructions" class="btn btn-outline">
+            <span class="btn-icon-large">📖</span>
+            <div class="btn-text-group">
+              <span class="btn-title">¿Cómo Jugar y Qué Evalúa?</span>
+              <span class="btn-desc">Métricas de atención óculo-manual</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN MULTIJUGADOR -->
+    <div id="modal-multiplayer" class="screen-overlay hidden">
+      <div class="dialog-card glass-panel">
+        <h2 class="dialog-title">👥 Configurar Multijugador</h2>
+        <p class="dialog-desc">Cada jugador jugará su turno individual. ¡Gana quien obtenga más puntos y mejor precisión!</p>
+
+        <div class="form-group">
+          <label>Número de Jugadores:</label>
+          <div class="player-count-selector">
+            <button class="btn-choice active" data-players="2">2 Jugadores</button>
+            <button class="btn-choice" data-players="3">3 Jugadores</button>
+            <button class="btn-choice" data-players="4">4 Jugadores</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="player-names-container">
+          <!-- Generado dinámicamente con JS -->
+        </div>
+
+        <div class="form-group">
+          <label>Duración del Turno:</label>
+          <div class="time-selector" id="multi-time-selector">
+            <button class="btn-choice" data-time="30">30 seg</button>
+            <button class="btn-choice active" data-time="45">45 seg</button>
+            <button class="btn-choice" data-time="60">60 seg</button>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btn-cancel-multi" class="btn btn-neutral">Cancelar</button>
+          <button id="btn-start-multi" class="btn btn-primary">¡Comenzar Torneo!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE TEMAS Y OPCIONES -->
+    <div id="modal-settings" class="screen-overlay hidden">
+      <div class="dialog-card glass-panel settings-dialog">
+        <h2 class="dialog-title">⚙️ Ajustes y Calibración</h2>
+        
+        <!-- SENSIBILIDAD DEL CONTROL -->
+        <div class="settings-section">
+          <h3>🎮 Sensibilidad del Control: <span id="sensitivity-value-label">1.0x</span></h3>
+          <div class="slider-container">
+            <input type="range" id="slider-sensitivity" min="0.4" max="2.0" step="0.1" value="1.0" class="custom-slider">
+            <div class="slider-labels">
+              <span>Suave (0.4x)</span>
+              <span>Normal (1.0x)</span>
+              <span>Rápida (2.0x)</span>
+            </div>
+          </div>
+          <p class="settings-note">Regula qué tan rápido responde la catapulta a tus dedos o al ratón.</p>
+        </div>
+
+        <!-- MODO DE CONTROL -->
+        <div class="settings-section">
+          <h3>🎯 Modo de Lanzamiento:</h3>
+          <div class="control-selector" id="control-selector">
+            <button class="btn-choice active" data-control="slingshot">🏹 Catapulta Táctil (Arrastrar y Soltar)</button>
+            <button class="btn-choice" data-control="tap">🎯 Toque Directo (Clic donde quieres tirar)</button>
+          </div>
+        </div>
+
+        <!-- ASISTENCIAS Y OPCIONES ADICIONALES -->
+        <div class="settings-section">
+          <h3>✨ Opciones Adicionales:</h3>
+          <div class="toggle-options-grid">
+            <label class="toggle-card">
+              <input type="checkbox" id="chk-guide" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-title">Línea Guía de Trayectoria</span>
+              <span class="toggle-desc">Muestra el arco parabólico al tensar</span>
+            </label>
+
+            <label class="toggle-card">
+              <input type="checkbox" id="chk-fast-reload" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-title">Recarga Ultra-Rápida</span>
+              <span class="toggle-desc">Permite lanzar pelotas seguidas sin esperar</span>
+            </label>
+
+            <label class="toggle-card">
+              <input type="checkbox" id="chk-sound-fx" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-title">Efectos de Sonido</span>
+              <span class="toggle-desc">Sonidos de resorte, choques y aplausos</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- FONDOS TEMÁTICOS -->
+        <div class="settings-section">
+          <h3>🎨 Selecciona el Fondo Temático:</h3>
+          <div class="themes-grid">
+            <div class="theme-option active" data-theme="theme-chicken">
+              <div class="theme-preview preview-chicken">
+                <span class="theme-badge-img">🐔</span>
+              </div>
+              <span class="theme-name">Granja Halloween</span>
+              <span class="theme-sub">Como el prototipo artesanal con la gallina momia</span>
+            </div>
+
+            <div class="theme-option" data-theme="theme-basket">
+              <div class="theme-preview preview-basket">
+                <span class="theme-badge-img">🏀</span>
+              </div>
+              <span class="theme-name">Cancha Street</span>
+              <span class="theme-sub">Parque urbano con tablero y asfalto</span>
+            </div>
+
+            <div class="theme-option" data-theme="theme-space">
+              <div class="theme-preview preview-space">
+                <span class="theme-badge-img">🚀</span>
+              </div>
+              <span class="theme-name">Galaxia Estelar</span>
+              <span class="theme-sub">Cosmos, nebulosas y portales de energía</span>
+            </div>
+
+            <div class="theme-option" data-theme="theme-carnival">
+              <div class="theme-preview preview-carnival">
+                <span class="theme-badge-img">🎪</span>
+              </div>
+              <span class="theme-name">Feria de Juegos</span>
+              <span class="theme-sub">Carpas de circo, luces de neón y fiesta</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TIEMPO DE PARTIDA -->
+        <div class="settings-section">
+          <h3>⏱️ Tiempo para 1 Jugador:</h3>
+          <div class="time-selector" id="single-time-selector">
+            <button class="btn-choice" data-time="30">30 seg</button>
+            <button class="btn-choice active" data-time="45">45 seg</button>
+            <button class="btn-choice" data-time="60">60 seg</button>
+            <button class="btn-choice" data-time="90">90 seg</button>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btn-close-settings" class="btn btn-primary">Guardar y Continuar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE INSTRUCCIONES Y PSICOMOTRICIDAD -->
+    <div id="modal-instructions" class="screen-overlay hidden">
+      <div class="dialog-card glass-panel instructions-dialog">
+        <h2 class="dialog-title">🧠 ¿Qué Evalúa este Juego?</h2>
+        
+        <div class="eval-explanation-grid">
+          <div class="eval-info-card">
+            <div class="eval-icon">👁️✋</div>
+            <h4>Atención Óculo-Manual</h4>
+            <p>Es la capacidad motora y visual para sincronizar lo que el ojo percibe (distancia, curvatura de la canasta y casillas de huevos) con la fuerza y dirección aplicadas por la mano en la catapulta.</p>
+          </div>
+
+          <div class="eval-info-card">
+            <div class="eval-icon">🧘🎯</div>
+            <h4>Concentración y Calibración</h4>
+            <p>Evalúa la estabilidad del tiro, la capacidad de sostener rachas de acierto sin distraerse, el control del impulso y el tiempo de toma de decisión antes de soltar el proyectil.</p>
+          </div>
+
+          <div class="eval-info-card">
+            <div class="eval-icon">🥚🏆</div>
+            <h4>Puntuaciones en la Huevera</h4>
+            <p>• <strong>Casilla Central:</strong> 50 pts (Máxima precisión).<br>
+               • <strong>Casillas Intermedias:</strong> 25 - 30 pts.<br>
+               • <strong>Bordes:</strong> 15 pts.<br>
+               • <strong>Rachas consecutivas:</strong> Multiplican tu puntaje (x1.5, x2, x3).</p>
+          </div>
+        </div>
+
+        <div class="how-to-play-box">
+          <h4>¿Cómo Jugar?</h4>
+          <ol>
+            <li>Haz clic o toca la bola de la catapulta en la base.</li>
+            <li>Arrastra hacia abajo/atrás para cargar la tensión y orientar el arco parabólico.</li>
+            <li>Suelta para disparar la pelota hacia los orificios del cartón de huevos.</li>
+            <li>¡Intenta encestar tantas pelotas como puedas antes de que se agote el tiempo!</li>
+          </ol>
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btn-close-instructions" class="btn btn-primary">¡Entendido!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA CAMBIO DE TURNO (MULTIJUGADOR) -->
+    <div id="screen-turn-transition" class="screen-overlay hidden">
+      <div class="dialog-card glass-panel turn-card">
+        <h2 class="turn-title">¡Turno Finalizado!</h2>
+        <div class="turn-summary-box">
+          <p id="turn-player-summary">Jugador 1 completó su ronda con <strong>150 puntos</strong>.</p>
+        </div>
+        <div class="next-player-alert">
+          <span>Siguiente en jugar:</span>
+          <h3 id="next-player-name-banner">Jugador 2</h3>
+        </div>
+        <button id="btn-start-next-turn" class="btn btn-primary pulse-btn">¡Listo, Comenzar mi Turno!</button>
+      </div>
+    </div>
+
+    <!-- PANTALLA DE RESULTADOS / EVALUACIÓN COGNITIVA -->
+    <div id="screen-results" class="screen-overlay hidden">
+      <div class="dialog-card glass-panel results-dialog">
+        <div class="results-header">
+          <span class="report-badge">📋 INFORME DE RENDIMIENTO</span>
+          <h2 id="results-title">Evaluación Psicomotriz y Puntuación</h2>
+          <p id="results-subtitle">Análisis de precisión óculo-manual y estabilidad de atención</p>
+        </div>
+
+        <!-- Vista para 1 Jugador (Reporte Psicomotriz Extenso) -->
+        <div id="single-player-results" class="results-content">
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-num" id="res-score">0</span>
+              <span class="metric-label">Puntos Totales</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-num" id="res-accuracy">0%</span>
+              <span class="metric-label">Precisión de Tiro</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-num" id="res-max-streak">0</span>
+              <span class="metric-label">Racha Máxima</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-num" id="res-avg-time">0.0s</span>
+              <span class="metric-label">Tiempo Medio Reacción</span>
+            </div>
+          </div>
+
+          <!-- Diagnóstico Cualitativo de Atención Óculo-Manual -->
+          <div class="diagnostic-card">
+            <div class="diag-header">
+              <div class="diag-meter-icon" id="diag-icon">🎯</div>
+              <div>
+                <h4 id="diag-grade">Nivel de Coordinación: Excelente</h4>
+                <p id="diag-percent-index">Índice Óculo-Manual: 88 / 100</p>
+              </div>
+            </div>
+            <div class="diag-meter-bar">
+              <div class="diag-meter-fill" id="diag-meter-fill" style="width: 88%;"></div>
+            </div>
+            <p id="diag-text" class="diag-description">
+              Demostraste una alta calibración visomotora y concentración sostenida al calcular la parábola y tensión de disparo.
+            </p>
+            <div class="diag-tips" id="diag-tips">
+              💡 <strong>Recomendación psicomotriz:</strong> Mantén la respiración rítmica antes de cada disparo para estabilizar aún más el tiempo de decisión.
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista para Multijugador (Podio y Tabla de Clasificación) -->
+        <div id="multi-player-results" class="results-content hidden">
+          <div class="podium-banner">
+            <span class="trophy-icon">🏆</span>
+            <h3 id="winner-banner">¡Ganador: Jugador 1!</h3>
+          </div>
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Puesto</th>
+                <th>Jugador</th>
+                <th>Puntos</th>
+                <th>Precisión</th>
+                <th>Atención Óculo-Manual</th>
+              </tr>
+            </thead>
+            <tbody id="multi-leaderboard-body">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="dialog-actions results-actions">
+          <button id="btn-restart-game" class="btn btn-primary">🔄 Jugar de Nuevo</button>
+          <button id="btn-back-menu-results" class="btn btn-neutral">🏠 Menú Principal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts modulares -->
+  <script src="audio.js"></script>
+  <script src="evaluation.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
